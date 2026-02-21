@@ -142,8 +142,15 @@ export default function DashboardPage() {
     ]);
     const [json, collabJson] = await Promise.all([response.json(), collabResponse.json()]);
 
+    if (!response.ok) {
+      setSelected(null);
+      setStatus((json as { error?: string }).error ?? "Failed to load capsule");
+      setCollaborators([]);
+      return;
+    }
+
     setSelected(json as CapsuleDetail);
-    setCollaborators(collabJson.collaborators ?? []);
+    setCollaborators(collabResponse.ok ? (collabJson.collaborators ?? []) : []);
   }
 
   async function onInviteCollaborator() {
@@ -286,7 +293,7 @@ export default function DashboardPage() {
             <ul className="mt-3 space-y-1 text-sm text-zinc-600 dark:text-zinc-300">
               {collaborators.map((collaborator) => (
                 <li key={collaborator.id}>
-                  Collaborator: {collaborator.email ?? collaborator.username ?? collaborator.userId}
+                  Collaborator: {collaborator.username ?? collaborator.email ?? collaborator.userId}
                 </li>
               ))}
             </ul>
