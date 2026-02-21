@@ -1,13 +1,10 @@
-//this is the garden
+// app/garden/page.tsx
 "use client";
-import { useEffect, useMemo, useState } from "react";
 
-type GardenView =
-  | "intro"        // empty garden
-  | "create"       // popup open
-  | "garden";      // capsules visible
+import { FormEvent, useEffect, useMemo, useState, useRef } from "react";
+// If you have a separate PlantMemory component you can import it, but this file includes inline emitter logic.
 
-const [view, setView] = useState<GardenView>("intro");
+type GardenView = "intro" | "create" | "garden";
 
 type CapsuleSummary = {
   id: string;
@@ -37,7 +34,9 @@ type CapsuleDetail = {
   error?: string;
 };
 
-export default function DashboardPage() {
+export default function GardenPage() {
+  const [view, setView] = useState<GardenView>("intro");
+
   const [capsules, setCapsules] = useState<CapsuleSummary[]>([]);
   const [selected, setSelected] = useState<CapsuleDetail | null>(null);
   const [status, setStatus] = useState<string>("Loading capsules...");
@@ -51,17 +50,20 @@ export default function DashboardPage() {
   }, []);
 
   async function loadCapsules() {
-    const response = await fetch("/api/capsules", { cache: "no-store" });
-    const json = await response.json();
-
-    if (!response.ok) {
-      setStatus(json.error ?? "Failed to load capsules");
+    try {
+      const response = await fetch("/api/capsules", { cache: "no-store" });
+      const json = await response.json();
+      if (!response.ok) {
+        setStatus(json.error ?? "Failed to load capsules");
+        setCapsules([]);
+        return;
+      }
+      setCapsules(json.capsules ?? []);
+      setStatus("");
+    } catch (err) {
+      setStatus("Network error loading capsules");
       setCapsules([]);
-      return;
     }
-
-    setCapsules(json.capsules ?? []);
-    setStatus("");
   }
 
   useEffect(() => {
@@ -71,128 +73,323 @@ export default function DashboardPage() {
   async function onCreate(formData: FormData) {
     setSubmitting(true);
     setStatus("");
-
-    const response = await fetch("/api/capsules", {
-      method: "POST",
-      body: formData,
-    });
-
-    const json = await response.json();
-
-    if (!response.ok) {
-      setStatus(json.error ?? "Failed to create capsule");
+    try {
+      const response = await fetch("/api/capsules", {
+        method: "POST",
+        body: formData,
+      });
+      const json = await response.json();
+      if (!response.ok) {
+        setStatus(json.error ?? "Failed to create capsule");
+        setSubmitting(false);
+        return;
+      }
+      setStatus("Capsule created and encrypted successfully.");
       setSubmitting(false);
-      return;
+      await loadCapsules();
+      // show the garden world after creating a capsule
+      setView("garden");
+    } catch (err) {
+      setStatus("Network error creating capsule");
+      setSubmitting(false);
     }
-
-    setStatus("Capsule created and encrypted successfully.");
-    setSubmitting(false);
-    await loadCapsules();
   }
 
   async function onSelectCapsule(id: string) {
-    const response = await fetch(`/api/capsules/${id}`, { cache: "no-store" });
-    const json = await response.json();
-    setSelected(json as CapsuleDetail);
+    try {
+      const response = await fetch(`/api/capsules/${id}`, { cache: "no-store" });
+      const json = await response.json();
+      setSelected(json as CapsuleDetail);
+    } catch {
+      setStatus("Network error loading capsule details");
+    }
   }
 
-  return (
-    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-8 p-8">
-      <h1 className="text-2xl font-semibold">Memory Capsules</h1>
+  function CreateModal({ onClose }: { onClose: () => void }) {
+    async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+      e.preventDefault();
+      const fd = new FormData(e.currentTarget);
+      await onCreate(fd);
+      e.currentTarget.reset();
+    }
 
-      <form
-        className="grid gap-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700"
-        onSubmit={async (event) => {
-          event.preventDefault();
-          const form = event.currentTarget;
-          const formData = new FormData(form);
-          await onCreate(formData);
-          form.reset();
-        }}
-      >
-        <input
-          name="title"
-          type="text"
-          placeholder="Capsule title"
-          className="rounded border border-zinc-300 p-2 dark:border-zinc-600 dark:bg-zinc-800"
-          required
-        />
-        <textarea
-          name="note"
-          placeholder="Write your memory note"
-          rows={4}
-          className="rounded border border-zinc-300 p-2 dark:border-zinc-600 dark:bg-zinc-800"
-        />
-        <input
-          name="unlockAt"
-          type="datetime-local"
-          defaultValue={defaultUnlockAt}
-          className="rounded border border-zinc-300 p-2 dark:border-zinc-600 dark:bg-zinc-800"
-          required
-        />
-        <input
-          name="files"
-          type="file"
-          multiple
-          accept="image/*,audio/*"
-          className="rounded border border-zinc-300 p-2 dark:border-zinc-600 dark:bg-zinc-800"
-        />
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-fit rounded bg-zinc-900 px-4 py-2 text-white disabled:opacity-50 dark:bg-zinc-200 dark:text-black"
-        >
-          {submitting ? "Creating..." : "Create Capsule"}
-        </button>
-      </form>
-
-      {status ? <p className="text-sm text-zinc-600 dark:text-zinc-300">{status}</p> : null}
-
-      <section>
-        <h2 className="mb-3 text-lg font-semibold">Mood Bubbles</h2>
-        <div className="flex flex-wrap gap-4">
-          {capsules.map((capsule) => (
-            <button
-              key={capsule.id}
-              type="button"
-              onClick={() => void onSelectCapsule(capsule.id)}
-              className="flex h-32 w-32 flex-col items-center justify-center rounded-full p-2 text-center text-xs text-white shadow"
-              style={{ backgroundColor: capsule.moodColor }}
-              title={capsule.title}
-            >
-              <span className="font-semibold">{capsule.mood}</span>
-              <span className="mt-1">{capsule.title.slice(0, 24)}</span>
-              <span className="mt-1">{capsule.unlocked ? "Unlocked" : "Locked"}</span>
-            </button>
-          ))}
+    return (
+      <div className="modal-backdrop">
+        <div className="modal">
+          <h3 className="text-lg font-semibold">Plant a memory</h3>
+          <form onSubmit={handleSubmit} className="mt-3 space-y-3">
+            <input name="title" required placeholder="Title" className="input" />
+            <textarea name="note" placeholder="Write a note" rows={3} className="input" />
+            <input name="unlockAt" type="datetime-local" defaultValue={defaultUnlockAt} required className="input" />
+            <input name="files" type="file" multiple accept="image/*,audio/*" className="input" />
+            <div className="flex gap-2">
+              <button type="submit" disabled={submitting} className="btn-primary">
+                {submitting ? "Creating..." : "Plant"}
+              </button>
+              <button type="button" onClick={onClose} className="btn-ghost">
+                Cancel
+              </button>
+            </div>
+          </form>
         </div>
-      </section>
 
-      {selected ? (
-        <section className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-          <h3 className="text-lg font-semibold">{selected.title}</h3>
-          <p className="text-sm text-zinc-600 dark:text-zinc-300">Mood: {selected.mood}</p>
-          <p className="text-sm text-zinc-600 dark:text-zinc-300">
-            Unlock at: {new Date(selected.unlockAt).toLocaleString()}
-          </p>
-          {selected.unlocked ? (
-            <>
-              <p className="mt-3 whitespace-pre-wrap">{selected.note || "(No note)"}</p>
-              <ul className="mt-3 space-y-1 text-sm">
-                {(selected.files ?? []).map((file) => (
-                  <li key={file.id}>
-                    <a className="underline" href={`/api/capsules/${selected.id}/files/${file.id}`}>
-                      {file.name}
-                    </a>
-                  </li>
+        <style jsx>{`
+          .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 60;
+          }
+          .modal {
+            width: 96%;
+            max-width: 520px;
+            background: rgba(10, 10, 10, 0.98);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 18px;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+            color: white;
+          }
+          .input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.02);
+            color: white;
+          }
+          .btn-primary {
+            background: #0f172a;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: none;
+          }
+          .btn-ghost {
+            background: transparent;
+            color: #cbd5e1;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  function IntroHotspot({ onPlant }: { onPlant: () => void }) {
+  return (
+    <>
+      <div
+        className="hotspot"
+        onClick={onPlant}
+        role="button"
+        aria-label="Plant a memory"
+      />
+
+      <div className="hint">
+        plant a memory
+      </div>
+
+      <style jsx>{`
+        .hotspot {
+          position: absolute;
+          left: 20px;
+          bottom: 70px;
+          width: 220px;
+          height: 60px;
+          cursor: pointer;
+          z-index: 10;
+        }
+
+        .hint {
+          position: absolute;
+          left: 20px;
+          bottom: 70px;
+          z-index: 11;
+          font-family: var(--font-typewriter), ui-monospace, monospace;
+          color: rgba(125, 211, 252, 0);
+          transition: color 0.16s ease, text-shadow 0.16s ease, transform 0.12s ease;
+          padding: 6px 10px;
+          border-radius: 8px;
+          pointer-events: none;
+          user-select: none;
+        }
+
+        .hotspot:hover + .hint {
+          color: #7dd3fc;
+          text-shadow: 0 0 6px #7dd3fc, 0 0 12px rgba(125, 211, 252, 0.12);
+          transform: translateY(-1.5px);
+        }
+      `}</style>
+    </>
+  );
+}
+
+  return (
+    <main style={{ color: "white", background: "black", minHeight: "100vh", position: "relative" }}>
+      <TypewriterText text="Start your garden" speed={90} pauseAfter={0} start={view === "intro"} />
+      {view === "intro" && <IntroHotspot onPlant={() => setView("create")} />}
+
+      {view === "create" && <CreateModal onClose={() => setView("intro")} />}
+
+      {view === "garden" && (
+        <div className="dashboard-wrap">
+          <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-8 p-8">
+            <h1 className="text-2xl font-semibold">Memory Capsules</h1>
+
+            <section>
+              {status ? <p className="text-sm text-zinc-400">{status}</p> : null}
+
+              <h2 className="mb-3 text-lg font-semibold mt-4">Mood Bubbles</h2>
+              <div className="flex flex-wrap gap-4">
+                {capsules.map((capsule) => (
+                  <button
+                    key={capsule.id}
+                    type="button"
+                    onClick={() => void onSelectCapsule(capsule.id)}
+                    className="flex h-32 w-32 flex-col items-center justify-center rounded-full p-2 text-center text-xs text-white shadow"
+                    style={{ backgroundColor: capsule.moodColor }}
+                    title={capsule.title}
+                  >
+                    <span className="font-semibold">{capsule.mood}</span>
+                    <span className="mt-1">{capsule.title.slice(0, 24)}</span>
+                    <span className="mt-1">{capsule.unlocked ? "Unlocked" : "Locked"}</span>
+                  </button>
                 ))}
-              </ul>
-            </>
-          ) : (
-            <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-300">{selected.error ?? "Capsule is locked"}</p>
-          )}
-        </section>
-      ) : null}
+              </div>
+            </section>
+
+            {selected ? (
+              <section className="rounded-lg border border-zinc-700 p-4">
+                <h3 className="text-lg font-semibold">{selected.title}</h3>
+                <p className="text-sm text-zinc-400">Mood: {selected.mood}</p>
+                <p className="text-sm text-zinc-400">Unlock at: {new Date(selected.unlockAt).toLocaleString()}</p>
+                {selected.unlocked ? (
+                  <>
+                    <p className="mt-3 whitespace-pre-wrap">{selected.note || "(No note)"}</p>
+                    <ul className="mt-3 space-y-1 text-sm">
+                      {(selected.files ?? []).map((file) => (
+                        <li key={file.id}>
+                          <a className="underline" href={`/api/capsules/${selected.id}/files/${file.id}`}>
+                            {file.name}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                ) : (
+                  <p className="mt-3 text-sm text-zinc-400">{selected.error ?? "Capsule is locked"}</p>
+                )}
+              </section>
+            ) : null}
+          </main>
+        </div>
+      )}
+      <style jsx>{`
+        .dashboard-wrap {
+          z-index: 20;
+        }
+      `}</style>
     </main>
+  );
+}
+
+function TypewriterText({
+  text,
+  speed = 100,
+  pauseAfter = 800,
+  start = true,
+}: {
+  text: string;
+  speed?: number;
+  pauseAfter?: number;
+  start?: boolean;
+}) {
+  const [index, setIndex] = useState(0);
+  const [showCaret, setShowCaret] = useState(true);
+
+  useEffect(() => {
+    if (!text || !start) return;
+    if (index >= text.length) {
+      if (pauseAfter > 0) {
+        const t = setTimeout(() => setShowCaret(false), pauseAfter);
+        return () => clearTimeout(t);
+      } else {
+        setShowCaret(true);
+      }
+      return;
+    }
+    const id = window.setTimeout(() => setIndex((i) => i + 1), speed);
+    return () => window.clearTimeout(id);
+  }, [index, text, speed, pauseAfter, start]);
+
+  return (
+    <>
+      <div className="typewriter-wrapper" aria-hidden={false}>
+        <span className="typewriter-text">{text.slice(0, index)}</span>
+        {showCaret && <span className="typewriter-caret" />}
+      </div>
+
+      <style jsx>{`
+        .typewriter-wrapper {
+          position: fixed;
+          left: 20px;
+          bottom: 20px;
+          z-index: 100;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 8px 12px;
+          border-radius: 8px;
+          background: rgba(255, 255, 255, 0.02);
+          backdrop-filter: blur(6px);
+          -webkit-backdrop-filter: blur(6px);
+          box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6);
+        }
+
+        .typewriter-text {
+          font-family: var(--font-typewriter), ui-monospace, monospace;
+          font-size: 1.15rem;
+          color: white;
+          letter-spacing: 0.5px;
+          white-space: nowrap;
+        }
+
+        .typewriter-caret {
+          width: 2px;
+          height: 1.2em;
+          background: var(--accent, #68d1ff);
+          display: inline-block;
+          margin-left: 2px;
+          transform-origin: left center;
+          animation: blink 1s steps(2, start) infinite;
+        }
+
+        @keyframes blink {
+          0%,
+          50% {
+            opacity: 1;
+          }
+          50.01%,
+          100% {
+            opacity: 0;
+          }
+        }
+
+        @media (max-width: 520px) {
+          .typewriter-text {
+            font-size: 1rem;
+          }
+          .typewriter-wrapper {
+            left: 12px;
+            bottom: 12px;
+            padding: 6px 10px;
+          }
+        }
+      `}</style>
+    </>
   );
 }
