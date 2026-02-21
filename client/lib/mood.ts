@@ -43,21 +43,20 @@ export async function inferMoodColorWithSource(text: string): Promise<MoodInfere
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: process.env.MOOD_LLM_MODEL ?? "gpt-4.1-mini",
-      temperature: 0.2,
-      messages: [
-        {
-          role: "system",
-          content:
-            "Return strict JSON: {\"mood\": string, \"color\": \"#RRGGBB\"}. Keep mood to 1-3 words.",
-        },
-        {
-          role: "user",
-          content: `Infer emotional mood and an appropriate hex color for this memory: ${text}`,
-        },
-      ],
-      response_format: { type: "json_object" },
-    }),
+  model: process.env.MOOD_LLM_MODEL ?? "gpt-4.1-mini",
+  temperature: 0.2,
+  messages: [
+    {
+      role: "system",
+      content: 'Return strict JSON: {"mood": string, "color": "#RRGGBB"}. Keep mood to 1-3 words. Colors must be chosen from a palette ranging from deep blues and purples through soft pinks to near-white — no greens, yellows, reds, or oranges.',
+    },
+    {
+      role: "user",
+      content: `Infer emotional mood and an appropriate hex color for this memory: ${text}`,
+    },
+  ],
+  response_format: { type: "json_object" },
+}),
   });
 
   if (!response.ok) {
