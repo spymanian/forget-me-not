@@ -1,5 +1,37 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Backend (Supabase) setup
+
+1. Copy `.env.example` to `.env.local` and fill values:
+	 - `SUPABASE_URL`
+	 - `SUPABASE_SERVICE_ROLE_KEY`
+	 - `CAPSULE_ENCRYPTION_SECRET`
+	 - `OPENAI_API_KEY` (optional, fallback mood tagging is used when missing)
+2. In Supabase SQL editor, run `supabase/schema.sql`.
+3. Install dependencies with `npm install`.
+
+## Capsule API (backend only)
+
+- `POST /api/capsules`
+	- `multipart/form-data`
+	- fields:
+		- `note` (string, optional)
+		- `unlockAt` (ISO datetime, required, must be in the future)
+		- `files` (repeatable file field, optional)
+- `GET /api/capsules`
+	- Lists capsule metadata with lock status.
+- `GET /api/capsules/:id`
+	- Returns decrypted note and file metadata only after unlock time.
+	- Returns `423` while locked.
+- `GET /api/capsules/:id/files/:fileId`
+	- Returns decrypted file bytes only after unlock time.
+	- Returns `423` while locked.
+- `POST /api/mood`
+	- JSON body: `{ "text": "memory text" }`
+	- Returns LLM mood + color (or fallback heuristic when no LLM key)
+
+All capsule contents (notes + files) are encrypted before insertion and stored encrypted in database.
+
 ## Getting Started
 
 First, run the development server:
