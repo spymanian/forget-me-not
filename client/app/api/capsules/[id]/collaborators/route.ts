@@ -260,3 +260,70 @@ export async function POST(req: Request, context: RouteContext) {
     );
   }
 }
+
+export async function DELETE(_: Request, context: RouteContext) {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const admin = getSupabaseAdmin();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id } = await context.params;
+
+    const { data: capsule, error: capsuleError } = await admin
+      .from("capsules")
+      .select("id,owner_id")
+      .eq("id", id)
+      .single();
+
+    if (capsuleError || !capsule) {
+      return NextResponse.json({ error: "Capsule not found" }, { status: 404 });
+    }
+
+    if (capsule.owner_id === user.id) {
+      return NextResponse.json(
+        { error: "Owner cannot leave capsule", details: "Owners can delete the capsule instead." },
+        { status: 400 },
+      );
+    }
+
+    const { data: existing } = await admin
+      .from("capsule_collaborators")
+      .select("id")
+      .eq("capsule_id", id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!existing) {
+      return NextResponse.json({ error: "You are not a collaborator on this capsule" }, { status: 404 });
+    }
+
+    const { error: deleteError } = await admin
+      .from("capsule_collaborators")
+      .delete()
+      .eq("capsule_id", id)
+      .eq("user_id", user.id);
+
+    if (deleteError) {
+      return NextResponse.json(
+        { error: "Failed to leave capsule", details: deleteError.message },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error: "Internal error",
+        details: error instanceof Error ? error.message : "Unknown",
+      },
+      { status: 500 },
+    );
+  }
+}

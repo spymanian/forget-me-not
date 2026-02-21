@@ -232,3 +232,64 @@ export async function PATCH(req: Request, context: RouteContext) {
     );
   }
 }
+
+export async function DELETE(_: Request, context: RouteContext) {
+  try {
+    const supabaseAuth = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabaseAuth.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id } = await context.params;
+    const supabase = getSupabaseAdmin();
+
+    const { data: capsule, error: capsuleError } = await supabase
+      .from("capsules")
+      .select("id,owner_id")
+      .eq("id", id)
+      .single();
+
+    if (capsuleError || !capsule) {
+      return NextResponse.json({ error: "Capsule not found" }, { status: 404 });
+    }
+
+    if (capsule.owner_id !== user.id) {
+      return NextResponse.json({ error: "Only owner can delete this capsule" }, { status: 403 });
+    }
+
+    const { error: deleteCollaboratorsError } = await supabase
+      .from("capsule_collaborators")
+      .delete()
+      .eq("capsule_id", id);
+
+    if (deleteCollaboratorsError) {
+      return NextResponse.json(
+        { error: "Failed to delete capsule", details: deleteCollaboratorsError.message },
+        { status: 500 },
+      );
+    }
+
+    const { error: deleteCapsuleError } = await supabase.from("capsules").delete().eq("id", id);
+
+    if (deleteCapsuleError) {
+      return NextResponse.json(
+        { error: "Failed to delete capsule", details: deleteCapsuleError.message },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error: "Unable to delete capsule",
+        details: error instanceof Error ? error.message : "Unknown",
+      },
+      { status: 500 },
+    );
+  }
+}

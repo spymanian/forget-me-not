@@ -1,7 +1,8 @@
 "use client";
 
 import GoogleSignIn from "@/components/GoogleSignIn";
-import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
+import { useEffect, useState } from "react";
 
 type CapsuleSummary = {
   id: string;
@@ -80,13 +81,6 @@ export default function DashboardPage() {
     return "Please check the input fields.";
   }
 
-  const defaultUnlockAt = useMemo(() => {
-    const date = new Date(Date.now() + 60 * 60 * 1000);
-    const offset = date.getTimezoneOffset();
-    const localDate = new Date(date.getTime() - offset * 60000);
-    return localDate.toISOString().slice(0, 16);
-  }, []);
-
   async function loadCapsules() {
     const response = await fetch("/api/capsules", { cache: "no-store" });
     const json = await response.json();
@@ -102,7 +96,13 @@ export default function DashboardPage() {
   }
 
   useEffect(() => {
-    void loadCapsules();
+    const timer = setTimeout(() => {
+      void loadCapsules();
+    }, 0);
+
+    return () => {
+      clearTimeout(timer);
+    };
   }, []);
 
   async function onCreate(formData: FormData) {
@@ -175,6 +175,50 @@ export default function DashboardPage() {
     await onSelectCapsule(selected.id);
   }
 
+  async function onDeleteCapsule() {
+    if (!selected || selected.accessRole !== "owner") {
+      return;
+    }
+
+    const response = await fetch(`/api/capsules/${selected.id}`, {
+      method: "DELETE",
+    });
+
+    const json = (await response.json().catch(() => null)) as { error?: string; details?: string } | null;
+
+    if (!response.ok) {
+      setStatus(json?.details ?? json?.error ?? "Failed to delete capsule");
+      return;
+    }
+
+    setSelected(null);
+    setCollaborators([]);
+    setStatus("Memory deleted successfully.");
+    await loadCapsules();
+  }
+
+  async function onLeaveCapsule() {
+    if (!selected || selected.accessRole !== "collaborator") {
+      return;
+    }
+
+    const response = await fetch(`/api/capsules/${selected.id}/collaborators`, {
+      method: "DELETE",
+    });
+
+    const json = (await response.json().catch(() => null)) as { error?: string; details?: string } | null;
+
+    if (!response.ok) {
+      setStatus(json?.details ?? json?.error ?? "Failed to leave capsule");
+      return;
+    }
+
+    setSelected(null);
+    setCollaborators([]);
+    setStatus("You left the memory capsule.");
+    await loadCapsules();
+  }
+
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-8 p-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -208,7 +252,6 @@ export default function DashboardPage() {
         <input
           name="unlockAt"
           type="datetime-local"
-          defaultValue={defaultUnlockAt}
           className="rounded border border-zinc-300 p-2 dark:border-zinc-600 dark:bg-zinc-800"
           required
         />
@@ -263,6 +306,26 @@ export default function DashboardPage() {
           </p>
 
           {selected.accessRole === "owner" ? (
+            <button
+              type="button"
+              onClick={() => void onDeleteCapsule()}
+              className="mt-3 rounded bg-red-600 px-3 py-2 text-sm text-white"
+            >
+              Delete Memory
+            </button>
+          ) : null}
+
+          {selected.accessRole === "collaborator" ? (
+            <button
+              type="button"
+              onClick={() => void onLeaveCapsule()}
+              className="mt-3 rounded bg-orange-500 px-3 py-2 text-sm text-white"
+            >
+              Leave Memory
+            </button>
+          ) : null}
+
+          {selected.accessRole === "owner" ? (
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <input
                 type="email"
@@ -299,10 +362,13 @@ export default function DashboardPage() {
                   .filter((file) => file.mimeType.startsWith("image/"))
                   .map((file) => (
                     <div key={file.id} className="overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-700">
-                      <img
+                      <Image
                         src={`/api/capsules/${selected.id}/files/${file.id}`}
                         alt={file.name}
-                        className="w-full object-contain"
+                        width={1200}
+                        height={800}
+                        unoptimized
+                        className="h-auto w-full object-contain"
                       />
                       <p className="truncate p-2 text-xs text-zinc-600 dark:text-zinc-300">{file.name}</p>
                     </div>
