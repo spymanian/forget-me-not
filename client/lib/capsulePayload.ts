@@ -5,6 +5,7 @@ type EncryptedCapsuleBlob = {
   iv: string;
   authTag: string;
   ciphertext: string;
+  fileCount?: number;
 };
 
 function isEncryptedCapsuleBlob(value: unknown): value is EncryptedCapsuleBlob {
@@ -23,7 +24,32 @@ function isEncryptedCapsuleBlob(value: unknown): value is EncryptedCapsuleBlob {
 
 export function packEncryptedCapsulePayload(capsuleId: string, payload: CapsulePayload) {
   const encrypted = encryptForCapsule(capsuleId, JSON.stringify(payload));
-  return JSON.stringify(encrypted);
+  return JSON.stringify({
+    ...encrypted,
+    fileCount: payload.files.length,
+  });
+}
+
+export function getAttachmentCountFromEncryptedBlob(noteFieldValue: string | null) {
+  if (!noteFieldValue) {
+    return 0;
+  }
+
+  try {
+    const parsed = JSON.parse(noteFieldValue) as unknown;
+
+    if (!isEncryptedCapsuleBlob(parsed)) {
+      return 0;
+    }
+
+    if (typeof parsed.fileCount === "number" && parsed.fileCount >= 0) {
+      return parsed.fileCount;
+    }
+  } catch {
+    return 0;
+  }
+
+  return 0;
 }
 
 export function unpackDecryptedCapsulePayload(capsuleId: string, noteFieldValue: string | null) {
