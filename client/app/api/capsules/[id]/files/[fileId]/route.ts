@@ -29,12 +29,27 @@ export async function GET(_: Request, context: RouteContext) {
 
     const { data, error } = await supabase
       .from("capsules")
-      .select("id,unlock_date,note")
+      .select("id,unlock_date,note,owner_id")
       .eq("id", id)
       .single();
 
     if (error || !data) {
       return NextResponse.json({ error: "Capsule not found" }, { status: 404 });
+    }
+
+    const isOwner = data.owner_id === user.id;
+
+    if (!isOwner) {
+      const { data: collaboration } = await supabase
+        .from("capsule_collaborators")
+        .select("id")
+        .eq("capsule_id", id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (!collaboration) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
     }
 
     if (new Date(data.unlock_date).getTime() > Date.now()) {
