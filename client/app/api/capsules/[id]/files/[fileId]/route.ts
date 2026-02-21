@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { unpackDecryptedCapsulePayload } from "@/lib/capsulePayload";
 import { createClient as createSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import type { CapsulePayload } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -25,7 +26,7 @@ export async function GET(_: Request, context: RouteContext) {
     }
 
     const { id, fileId } = await context.params;
-    const supabase = supabaseAuth;
+    const supabase = getSupabaseAdmin();
 
     const { data, error } = await supabase
       .from("capsules")

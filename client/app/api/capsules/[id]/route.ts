@@ -3,6 +3,7 @@ import { z } from "zod";
 import { packEncryptedCapsulePayload, unpackDecryptedCapsulePayload } from "@/lib/capsulePayload";
 import { inferMoodColor } from "@/lib/mood";
 import { createClient as createSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import type { CapsulePayload } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -20,7 +21,7 @@ const updateSchema = z.object({
   unlockAt: z.string().trim().min(1).optional(),
 });
 
-async function canAccessCapsule(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, capsuleId: string, userId: string) {
+async function canAccessCapsule(supabase: ReturnType<typeof getSupabaseAdmin>, capsuleId: string, userId: string) {
   const { data: capsule, error } = await supabase
     .from("capsules")
     .select("id,owner_id,title,created_at,unlock_date,mood,mood_color,is_locked,note")
@@ -63,7 +64,7 @@ export async function GET(_: Request, context: RouteContext) {
     }
 
     const { id } = await context.params;
-    const supabase = supabaseAuth;
+  const supabase = getSupabaseAdmin();
 
     const access = await canAccessCapsule(supabase, id, user.id);
 
@@ -164,7 +165,7 @@ export async function PATCH(req: Request, context: RouteContext) {
       return NextResponse.json({ error: "No fields to update" }, { status: 400 });
     }
 
-    const supabase = supabaseAuth;
+    const supabase = getSupabaseAdmin();
     const access = await canAccessCapsule(supabase, id, user.id);
 
     if (!access.found) {

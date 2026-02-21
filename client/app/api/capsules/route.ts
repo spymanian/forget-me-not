@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getAttachmentCountFromEncryptedBlob, packEncryptedCapsulePayload } from "@/lib/capsulePayload";
 import { inferMoodColor } from "@/lib/mood";
 import { createClient as createSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import type { CapsuleFile, CapsulePayload } from "@/lib/types";
 
 const metadataSchema = z.object({
@@ -145,7 +146,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const supabase = supabaseAuth;
+    const supabase = getSupabaseAdmin();
 
     const capsuleSelect = "id,title,created_at,unlock_date,mood,mood_color,is_locked,owner_id,note";
 
@@ -193,6 +194,7 @@ export async function GET() {
         .from("capsules")
         .select(capsuleSelect)
         .in("id", collaboratorCapsuleIds)
+        .neq("owner_id", user.id)
         .order("created_at", { ascending: false });
 
       if (sharedError) {

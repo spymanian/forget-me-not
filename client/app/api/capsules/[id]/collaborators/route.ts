@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient as createSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { ensureProfileForUser } from "@/lib/profileSync";
 
 type RouteContext = {
   params: Promise<{
@@ -15,9 +17,75 @@ const inviteSchema = z.object({
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+async function resolveOrCreateProfileByEmail(email: string) {
+  const admin = getSupabaseAdmin();
+  const normalizedEmail = email.toLowerCase();
+
+  const { data: existingProfile, error: existingProfileError } = await admin
+    .from("profiles")
+    .select("id,email")
+    .eq("email", normalizedEmail)
+    .maybeSingle();
+
+  if (existingProfileError) {
+    throw new Error(`Failed to resolve user profile: ${existingProfileError.message}`);
+  }
+
+  if (existingProfile) {
+    return existingProfile;
+  }
+
+  let page = 1;
+  const perPage = 1000;
+  let authUser: { id: string; email?: string; user_metadata?: Record<string, unknown> } | undefined;
+
+  while (!authUser) {
+    const { data: usersData, error: usersError } = await admin.auth.admin.listUsers({ page, perPage });
+
+    if (usersError) {
+      throw new Error(`Failed to resolve auth user: ${usersError.message}`);
+    }
+
+    authUser = usersData.users.find((candidate) => candidate.email?.toLowerCase() === normalizedEmail);
+
+    if (authUser) {
+      break;
+    }
+
+    if (usersData.users.length < perPage) {
+      break;
+    }
+
+    page += 1;
+  }
+
+  if (!authUser?.email) {
+    return null;
+  }
+
+  await ensureProfileForUser(admin, {
+    id: authUser.id,
+    email: authUser.email,
+    user_metadata: authUser.user_metadata,
+  });
+
+  const { data: createdProfile, error: createdProfileError } = await admin
+    .from("profiles")
+    .select("id,email")
+    .eq("id", authUser.id)
+    .maybeSingle();
+
+  if (createdProfileError) {
+    throw new Error(`Failed to create user profile: ${createdProfileError.message}`);
+  }
+
+  return createdProfile;
+}
+
 export async function GET(_: Request, context: RouteContext) {
   try {
     const supabase = await createSupabaseServerClient();
+    const admin = getSupabaseAdmin();
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -71,7 +139,7 @@ export async function GET(_: Request, context: RouteContext) {
     let profilesById = new Map<string, { email: string | null; username: string | null }>();
 
     if (userIds.length > 0) {
-      const { data: profiles } = await supabase
+      const { data: profiles } = await admin
         .from("profiles")
         .select("id,email,username")
         .in("id", userIds);
@@ -142,24 +210,13 @@ export async function POST(req: Request, context: RouteContext) {
       );
     }
 
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("id,email")
-      .ilike("email", parsed.data.email)
-      .maybeSingle();
-
-    if (profileError) {
-      return NextResponse.json(
-        { error: "Failed to resolve user profile", details: profileError.message },
-        { status: 500 },
-      );
-    }
+    const profile = await resolveOrCreateProfileByEmail(parsed.data.email);
 
     if (!profile) {
       return NextResponse.json(
         {
           error: "User with that email not found",
-          details: "Ask them to sign in once so their profile is created.",
+          details: "No matching user exists in authentication records.",
         },
         { status: 404 },
       );
