@@ -1,7 +1,15 @@
+//this is the garden
 "use client";
 
 import GoogleSignIn from "@/components/GoogleSignIn";
 import { useEffect, useMemo, useState } from "react";
+
+type GardenView =
+  | "intro"        // empty garden
+  | "create"       // popup open
+  | "garden";      // capsules visible
+
+const [view, setView] = useState<GardenView>("intro");
 
 type CapsuleSummary = {
   id: string;
