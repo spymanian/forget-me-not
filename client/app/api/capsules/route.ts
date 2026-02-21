@@ -1,9 +1,10 @@
 import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { packEncryptedCapsulePayload } from "@/lib/capsulePayload";
+import { getAttachmentCountFromEncryptedBlob, packEncryptedCapsulePayload } from "@/lib/capsulePayload";
 import { inferMoodColor } from "@/lib/mood";
 import { createClient as createSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import type { CapsuleFile, CapsulePayload } from "@/lib/types";
 
 const metadataSchema = z.object({
@@ -145,20 +146,68 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const supabase = supabaseAuth;
+    const supabase = getSupabaseAdmin();
 
-    const { data, error } = await supabase
+    const capsuleSelect = "id,title,created_at,unlock_date,mood,mood_color,is_locked,owner_id,note";
+
+    const { data: ownedCapsules, error: ownedError } = await supabase
       .from("capsules")
-      .select("id,title,created_at,unlock_date,mood,mood_color,is_locked")
-      .order("created_at", { ascending: false })
-      .limit(100);
+      .select(capsuleSelect)
+      .eq("owner_id", user.id)
+      .order("created_at", { ascending: false });
 
-    if (error) {
+    if (ownedError) {
       return NextResponse.json(
-        { error: "Failed to fetch capsules", details: error.message },
+        { error: "Failed to fetch capsules", details: ownedError.message },
         { status: 500 },
       );
     }
+
+    const { data: collaborations, error: collabError } = await supabase
+      .from("capsule_collaborators")
+      .select("capsule_id")
+      .eq("user_id", user.id);
+
+    if (collabError) {
+      return NextResponse.json(
+        { error: "Failed to fetch capsules", details: collabError.message },
+        { status: 500 },
+      );
+    }
+
+    const collaboratorCapsuleIds = (collaborations ?? []).map((row: { capsule_id: string }) => row.capsule_id);
+
+    let sharedCapsules: Array<{
+      id: string;
+      title: string;
+      created_at: string;
+      unlock_date: string;
+      mood: string | null;
+      mood_color: string | null;
+      is_locked: boolean | null;
+      owner_id: string;
+      note: string | null;
+    }> = [];
+
+    if (collaboratorCapsuleIds.length > 0) {
+      const { data: sharedData, error: sharedError } = await supabase
+        .from("capsules")
+        .select(capsuleSelect)
+        .in("id", collaboratorCapsuleIds)
+        .neq("owner_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (sharedError) {
+        return NextResponse.json(
+          { error: "Failed to fetch capsules", details: sharedError.message },
+          { status: 500 },
+        );
+      }
+
+      sharedCapsules = (sharedData ?? []) as typeof sharedCapsules;
+    }
+
+    const data = [...(ownedCapsules ?? []), ...sharedCapsules];
 
     const now = Date.now();
 
@@ -170,7 +219,10 @@ export async function GET() {
       mood: string | null;
       mood_color: string | null;
       is_locked: boolean | null;
-    }) => ({
+      owner_id: string;
+      note: string | null;
+    }) => {
+      return {
       id: capsule.id,
       title: capsule.title,
       createdAt: capsule.created_at,
@@ -178,9 +230,17 @@ export async function GET() {
       mood: capsule.mood ?? "reflective",
       moodColor: capsule.mood_color ?? "#A78BFA",
       unlocked: new Date(capsule.unlock_date).getTime() <= now,
-    }));
+      accessRole: capsule.owner_id === user.id ? "owner" : "collaborator",
+      canEdit: true,
+      attachmentCount: getAttachmentCountFromEncryptedBlob(capsule.note),
+      };
+    });
 
-    return NextResponse.json({ capsules });
+    const uniqueCapsules = Array.from(new Map(capsules.map((capsule) => [capsule.id, capsule])).values())
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 100);
+
+    return NextResponse.json({ capsules: uniqueCapsules });
   } catch (error) {
     return NextResponse.json(
       { error: "Internal error", details: error instanceof Error ? error.message : "Unknown" },
