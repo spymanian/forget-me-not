@@ -5,8 +5,6 @@ import TypewriterText from "@/components/TypewriterText";
 import { createClient as createSupabaseClient } from "@/lib/supabase/client";
 import Image from "next/image";
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { loadSlim } from "@tsparticles/slim";
-import GoogleSignIn from "@/components/GoogleSignIn";
 
 type GardenView = "intro" | "create" | "garden";
 
@@ -125,6 +123,21 @@ function CreateModal({
 
     const formElement = event.currentTarget;
     const formData = new FormData(formElement);
+    const unlockAtValue = formData.get("unlockAt");
+
+    if (typeof unlockAtValue === "string" && unlockAtValue) {
+      const parsedUnlockAt = new Date(unlockAtValue);
+
+      if (Number.isNaN(parsedUnlockAt.getTime())) {
+        setError("Please choose a valid unlock date.");
+        return;
+      }
+
+      // `datetime-local` omits timezone info; convert in the browser so the server
+      // receives an absolute timestamp instead of interpreting it in UTC.
+      formData.set("unlockAt", parsedUnlockAt.toISOString());
+    }
+
     setError("");
     const created = await onCreate(formData);
 

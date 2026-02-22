@@ -17,15 +17,26 @@ const inviteSchema = z.object({
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-async function resolveOrCreateProfileByEmail(email: string) {
+type ResolvedProfile = {
+  id: string;
+  email: string | null;
+};
+
+type CapsuleOwnerRow = {
+  id: string;
+  owner_id: string;
+};
+
+async function resolveOrCreateProfileByEmail(email: string): Promise<ResolvedProfile | null> {
   const admin = getSupabaseAdmin();
   const normalizedEmail = email.toLowerCase();
 
-  const { data: existingProfile, error: existingProfileError } = await admin
+  const { data: existingProfileData, error: existingProfileError } = await admin
     .from("profiles")
     .select("id,email")
     .eq("email", normalizedEmail)
     .maybeSingle();
+  const existingProfile = existingProfileData as ResolvedProfile | null;
 
   if (existingProfileError) {
     throw new Error(`Failed to resolve user profile: ${existingProfileError.message}`);
@@ -69,11 +80,12 @@ async function resolveOrCreateProfileByEmail(email: string) {
     user_metadata: authUser.user_metadata,
   });
 
-  const { data: createdProfile, error: createdProfileError } = await admin
+  const { data: createdProfileData, error: createdProfileError } = await admin
     .from("profiles")
     .select("id,email")
     .eq("id", authUser.id)
     .maybeSingle();
+  const createdProfile = createdProfileData as ResolvedProfile | null;
 
   if (createdProfileError) {
     throw new Error(`Failed to create user profile: ${createdProfileError.message}`);
@@ -96,11 +108,12 @@ export async function GET(_: Request, context: RouteContext) {
 
     const { id } = await context.params;
 
-    const { data: capsule, error: capsuleError } = await supabase
+    const { data: capsuleData, error: capsuleError } = await supabase
       .from("capsules")
       .select("id,owner_id")
       .eq("id", id)
       .single();
+    const capsule = capsuleData as CapsuleOwnerRow | null;
 
     if (capsuleError || !capsule) {
       return NextResponse.json({ error: "Capsule not found" }, { status: 404 });
@@ -186,11 +199,12 @@ export async function POST(req: Request, context: RouteContext) {
 
     const { id } = await context.params;
 
-    const { data: capsule, error: capsuleError } = await supabase
+    const { data: capsuleData, error: capsuleError } = await supabase
       .from("capsules")
       .select("id,owner_id")
       .eq("id", id)
       .single();
+    const capsule = capsuleData as CapsuleOwnerRow | null;
 
     if (capsuleError || !capsule) {
       return NextResponse.json({ error: "Capsule not found" }, { status: 404 });
@@ -275,11 +289,12 @@ export async function DELETE(_: Request, context: RouteContext) {
 
     const { id } = await context.params;
 
-    const { data: capsule, error: capsuleError } = await admin
+    const { data: capsuleData, error: capsuleError } = await admin
       .from("capsules")
       .select("id,owner_id")
       .eq("id", id)
       .single();
+    const capsule = capsuleData as CapsuleOwnerRow | null;
 
     if (capsuleError || !capsule) {
       return NextResponse.json({ error: "Capsule not found" }, { status: 404 });

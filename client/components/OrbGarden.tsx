@@ -158,6 +158,29 @@ function getGlowStrength(capsule: CapsuleSummary, nowMs: number) {
   return 0.16 + progress * 0.84;
 }
 
+function formatCountdown(unlockMs: number, nowMs: number) {
+  if (!Number.isFinite(unlockMs)) {
+    return "";
+  }
+
+  const remainingMs = Math.max(0, unlockMs - nowMs);
+  const totalSeconds = Math.floor(remainingMs / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (days > 0) {
+    return `${days}d ${hours}h ${minutes}m`;
+  }
+
+  if (hours > 0) {
+    return `${hours}h ${minutes}m ${seconds}s`;
+  }
+
+  return `${minutes}m ${seconds}s`;
+}
+
 function buildOrbPositions(capsules: CapsuleSummary[], width: number, height: number) {
   const directions: GridCoord[] = [
     { x: 1, y: 0 },
@@ -657,6 +680,7 @@ export default function OrbGarden({
             const glowRgb = vibrantRgbTripletFromHex(capsule.moodColor);
             const isDragging = draggingId === capsule.id;
             const bloomLevel = isUnlocked ? 1 : Math.max(0.16, glowStrength * 0.66);
+            const countdownLabel = isUnlocked ? "" : formatCountdown(unlockMs, nowMs);
 
             return (
               <button
@@ -789,6 +813,7 @@ export default function OrbGarden({
                   ) : null}
                 </span>
                 <span className="orb-label">{capsule.title}</span>
+                {!isUnlocked && countdownLabel ? <span className="orb-timer">{countdownLabel}</span> : null}
               </button>
             );
           })}
@@ -984,10 +1009,31 @@ export default function OrbGarden({
           transition: opacity 140ms ease, color 140ms ease;
         }
 
+        .orb-timer {
+          position: absolute;
+          left: 50%;
+          top: calc(100% + 24px);
+          transform: translateX(-50%);
+          max-width: 172px;
+          white-space: nowrap;
+          font-size: 10px;
+          font-weight: 600;
+          color: rgba(186, 230, 253, 0.96);
+          pointer-events: none;
+          text-shadow: 0 2px 8px rgba(0, 0, 0, 0.66);
+          opacity: 0.9;
+        }
+
         .orb-node:hover .orb-label,
         .orb-node:focus-visible .orb-label {
           opacity: 1;
           color: #f8fafc;
+        }
+
+        .orb-node:hover .orb-timer,
+        .orb-node:focus-visible .orb-timer {
+          opacity: 1;
+          color: #dbeafe;
         }
 
         .orb-locked .orb-shell {
@@ -1080,6 +1126,12 @@ export default function OrbGarden({
           .orb-label {
             font-size: 9px;
             max-width: 136px;
+          }
+
+          .orb-timer {
+            top: calc(100% + 21px);
+            max-width: 144px;
+            font-size: 8px;
           }
         }
       `}</style>

@@ -21,12 +21,30 @@ const updateSchema = z.object({
   unlockAt: z.string().trim().min(1).optional(),
 });
 
+type CapsuleFullRow = {
+  id: string;
+  owner_id: string;
+  title: string;
+  created_at: string;
+  unlock_date: string;
+  mood: string | null;
+  mood_color: string | null;
+  is_locked: boolean;
+  note: string;
+};
+
+type CapsuleOwnerRow = {
+  id: string;
+  owner_id: string;
+};
+
 async function canAccessCapsule(supabase: ReturnType<typeof getSupabaseAdmin>, capsuleId: string, userId: string) {
-  const { data: capsule, error } = await supabase
+  const { data: capsuleData, error } = await supabase
     .from("capsules")
     .select("id,owner_id,title,created_at,unlock_date,mood,mood_color,is_locked,note")
     .eq("id", capsuleId)
     .single();
+  const capsule = capsuleData as CapsuleFullRow | null;
 
   if (error || !capsule) {
     return { found: false as const };
@@ -99,7 +117,10 @@ export async function GET(_: Request, context: RouteContext) {
     }
 
     if (data.is_locked) {
-      await supabase.from("capsules").update({ is_locked: false }).eq("id", data.id);
+      await supabase
+        .from("capsules")
+        .update({ is_locked: false } as unknown as never)
+        .eq("id", data.id);
     }
 
     const { payload } = unpackDecryptedCapsulePayload(data.id, data.note) as {
@@ -212,7 +233,10 @@ export async function PATCH(req: Request, context: RouteContext) {
       updates.mood_color = mood.color;
     }
 
-    const { error: updateError } = await supabase.from("capsules").update(updates).eq("id", existing.id);
+    const { error: updateError } = await supabase
+      .from("capsules")
+      .update(updates as unknown as never)
+      .eq("id", existing.id);
 
     if (updateError) {
       return NextResponse.json(
@@ -247,11 +271,12 @@ export async function DELETE(_: Request, context: RouteContext) {
     const { id } = await context.params;
     const supabase = getSupabaseAdmin();
 
-    const { data: capsule, error: capsuleError } = await supabase
+    const { data: capsuleData, error: capsuleError } = await supabase
       .from("capsules")
       .select("id,owner_id")
       .eq("id", id)
       .single();
+    const capsule = capsuleData as CapsuleOwnerRow | null;
 
     if (capsuleError || !capsule) {
       return NextResponse.json({ error: "Capsule not found" }, { status: 404 });

@@ -1,6 +1,6 @@
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createClient } from "@supabase/supabase-js";
 
-let cachedClient: SupabaseClient<any, "public", any> | null = null;
+let cachedClient: ReturnType<typeof createClient> | null = null;
 
 export function getSupabaseAdmin() {
   if (cachedClient) {
@@ -18,7 +18,7 @@ export function getSupabaseAdmin() {
     throw new Error("SUPABASE_SERVICE_ROLE_KEY is required");
   }
 
-  cachedClient = createClient<any>(supabaseUrl, supabaseServiceRoleKey, {
+  cachedClient = createClient(supabaseUrl, supabaseServiceRoleKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,

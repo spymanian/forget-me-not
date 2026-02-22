@@ -14,6 +14,13 @@ type RouteContext = {
   }>;
 };
 
+type CapsuleFileRow = {
+  id: string;
+  unlock_date: string;
+  note: string;
+  owner_id: string;
+};
+
 export async function GET(_: Request, context: RouteContext) {
   try {
     const supabaseAuth = await createSupabaseServerClient();
@@ -28,11 +35,12 @@ export async function GET(_: Request, context: RouteContext) {
     const { id, fileId } = await context.params;
     const supabase = getSupabaseAdmin();
 
-    const { data, error } = await supabase
+    const { data: capsuleData, error } = await supabase
       .from("capsules")
       .select("id,unlock_date,note,owner_id")
       .eq("id", id)
       .single();
+    const data = capsuleData as CapsuleFileRow | null;
 
     if (error || !data) {
       return NextResponse.json({ error: "Capsule not found" }, { status: 404 });
