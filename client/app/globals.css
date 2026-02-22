@@ -1,8 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --cursor-img: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAE80lEQVR4AbxXbWhbVRh+7r1Jk65papt2XVy7zspgq9SWWVoQNumsdJOKCM6PH3782A/tP51aZVaGbKDgD2Ew/xSkiOiwotLhEIcDRZh0g/6YUxE2F9e1xqZtvpMmudf3OeldY9mapKMN973n433P+zznPe8590TvefO8Ff9z0Pr4x5D16mdB69mPpq2nT05bA+/+cgUb8NM/OfgVxoOv4/pcFtUuC5sqNDgNQHe6XBuADz1mdCAY96DKpSOTW4Z0VlbXLLfWr6ZfXOjHfNzEXVU6khktj2SZZmI2cDXfWN+3/tt0ftqXpnKIJE3E0xYujB0fOnOst319ofPe9an5HAJzFsIJEzEB/3zQ7/z97MkP8ur1f+uEIDDl1KCfa5Bl30aJTlBbNgq0EEdFoLCjWP3u9v7HHxk6M9F/5OzkY8cvBFiyPXBs4q89L41+U2z8Sn1ZBJo69j/RsKNnT11LZ1d9830dXt/WZpabWzu7PL6mlrrtnd33dD/5/EqQ1dplEWh79PDbO/tePsxEcTs13BSHBkM8ub2bt3S/eGIUZfxkWOnWmq4bDhlR5SIFoGaTroQe3EKCpyjr5Yi4K93cVVXrs60VuNtSTVUXMt7KvDt+S24nakDBKz+ioGO16mIyEnbKTAlIu3BKQ42QoERTJmbC+UONuq21BihetwaPRMyOGolRb0tZBMxMOpVctHBjYRlom88BTVZEHskJoM2vKyEAiZEsc4V6EmF/oZRE4OHXxn/eO/jpt7XN7bs52JLIz8ZMeCosBCM51FcbcElkcibUr7HGULr4ogZTbEF00SQzbEil4ClKwLf9gZ761q4Hm+7fd8AwNM2QEZwRk7FSPt0pcVopO6JaQl0rHzTW6Z92PF3TWQtZCVhWyJHg3LXJCeptEXd29dZl3xunz1NDxxQmms+jo6VOwxaZKXWAhR2NBnZvc6DBa+CfpVwISZRmoyYW5DtDorT9/v0D3SxtKUqAhvbaedy6urCwjxIIZcEcOOg/iqf8w9jfcILdqu/ytExZtVZ/lUSALphMDKtTRjC52EdwAu8beQ69Iy/g0BcPKSIBIcZk5C7YJUnZXKvDnsQd7QKCZmRikbSmZkkg9p07NIq+e6/A60qzqXQkR6IxsU0ufV9XkFCpKfNRY4q+IrKOTCLeF6vl7njphmSWjBqbOSqZ7sCR3p/w3sBFfDnzDkiMEpFzgruAO4S5I+Y3I8E6pSQCTCBLrNOS8Qm5tKTk6sat+Pe8JeAGvpsawLl/n8Hl6F4Eo7ralgmxcTstcJqZnCXXPUs8/O9RHUUJxEOBq2oLiTm3FCUuh1FGnEZTFhZlm/260IFriTZcT+5SV7oKuVWnMoChQQgCjFxG7BgNEi+kUZTA6eGeVg7gCZgQ4HCSh4+JYESSQRT28UvHBJAudVKyPyYHUUyOaEaOeo4nedqIKGz1ksaqj31jKigd9gB+D1gPxXIKmG0K+3jfjEiUeCDZwLYP0asZlERAjFc+KgPtrCYgJSoZT0NecFnaYIUl+wtlrQRcdMKZEYzCNeZas05dqbJWAulTb+2sIwj/R7BU6yvrzTqJyazdrBeTtRIAwuH5ybHhV2RzgDuDCchFZX0JNH8qLTVuV6ydgHj844eRDxOhqQD/UzL8pjBgPR2dDYq6pOeOCBBhfLirJScXlbTsc/t7//VQeyN1lGLyHwAAAP//xaWg5AAAAAZJREFUAwBuBi2Uvl6aXgAAAABJRU5ErkJggg==");
 }
 
 @theme inline {
@@ -24,13 +23,13 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
-  cursor: url("/cursor.png") 4 4, auto !important;
+  cursor: var(--cursor-img) 4 4, auto !important;
 }
 
 *,
 *::before,
 *::after {
-  cursor: url("/cursor.png") 4 4, auto !important;
+  cursor: var(--cursor-img) 4 4, auto !important;
 }
 
 a,
@@ -41,5 +40,5 @@ input[type="reset"],
 [role="button"],
 label,
 summary {
-  cursor: url("/cursor.png") 4 4, pointer !important;
+  cursor: var(--cursor-img) 4 4, pointer !important;
 }
