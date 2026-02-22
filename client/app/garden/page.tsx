@@ -2,6 +2,7 @@
 
 import GoogleSignIn from "@/components/GoogleSignIn";
 import TypewriterText from "@/components/TypewriterText";
+import OrbGarden from "@/components/OrbGarden";
 import Image from "next/image";
 import { FormEvent, useEffect, useState } from "react";
 
@@ -410,6 +411,9 @@ export default function GardenPage() {
 
       {view === "garden" ? (
         <div className="dashboard-wrap">
+          {viewInitialized && view === "garden" ? (
+        <OrbGarden capsules={capsules} onSelect={(id) => void onSelectCapsule(id)} />
+      ) : null}
           <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-8 p-8">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h1 className="text-2xl font-semibold">Memory Capsules</h1>
