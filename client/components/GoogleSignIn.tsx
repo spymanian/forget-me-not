@@ -61,7 +61,7 @@ export default function GoogleSignIn() {
   }
 
   // show logout when we have a user
-  if (user) {
+ /*  if (user) {
     return (
       <button onClick={signOut} className="google-signin-btn">
         <span>Log out</span>
@@ -97,7 +97,7 @@ export default function GoogleSignIn() {
         `}</style>
       </button>
     );
-  }
+  } */
 
   return (
     <button onClick={signIn} className="google-signin-btn">

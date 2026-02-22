@@ -182,7 +182,7 @@ export default function Home() {
           <p className="welcome-prompt">start your garden</p>
               {/* if the user is already signed in we redirect to dashboard, otherwise show button */}
           <div className="sign-in-wrapper">
-            {user ? null : <GoogleSignIn />}
+            <GoogleSignIn />
           </div>
         </div>
       </main>
