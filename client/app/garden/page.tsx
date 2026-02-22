@@ -1,6 +1,6 @@
 "use client";
 
-import GoogleSignIn from "@/components/GoogleSignIn";
+import FlowerMenu from "@/components/FlowerMenu";
 import TypewriterText from "@/components/TypewriterText";
 import OrbGarden from "@/components/OrbGarden";
 import Image from "next/image";
@@ -437,7 +437,8 @@ export default function GardenPage() {
           <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-8 p-8">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h1 className="text-2xl font-semibold">Memory Capsules</h1>
-              <GoogleSignIn />
+              {/* log out moved into flower menu */}
+              <FlowerMenu />
             </div>
 
             {status ? <p className="text-sm text-zinc-400">{status}</p> : null}
