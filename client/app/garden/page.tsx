@@ -412,9 +412,13 @@ export default function GardenPage() {
       {view === "garden" ? (
         <div className="dashboard-wrap">
           {viewInitialized && view === "garden" ? (
-        <OrbGarden capsules={capsules} onSelect={(id) => void onSelectCapsule(id)} />
-      ) : null}
-          <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-8 p-8">
+            // OrbGarden is absolutely positioned; ensure the garden internals set pointer-events:auto on
+            // the orb nodes only if you want them clickable, to avoid blocking UI under it.
+            <OrbGarden capsules={capsules} onSelect={(id) => void onSelectCapsule(id)} />
+          ) : null}
+
+          {/* changed inner <main> to <div> to avoid nested <main> tags */}
+          <div className="dashboard-inner mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-8 p-8">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h1 className="text-2xl font-semibold">Memory Capsules</h1>
               <GoogleSignIn />
@@ -536,7 +540,7 @@ export default function GardenPage() {
                 )}
               </section>
             ) : null}
-          </main>
+          </div>
         </div>
       ) : null}
 
