@@ -17,6 +17,10 @@ const courierPrime = Courier_Prime({
 export const metadata: Metadata = {
   title: "Forget Me Not",
   description: "Plant a memory. Watch it bloom.",
+  icons: {
+    icon: "/forget-me-not-favicon.svg",
+    shortcut: "/forget-me-not-favicon.svg",
+  },
 };
 
 export default function RootLayout({

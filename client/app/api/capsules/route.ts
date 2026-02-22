@@ -60,9 +60,9 @@ export async function POST(req: Request) {
 
     const files = await parseFiles(formData);
 
-    if (!parsed.data.note && files.length === 0) {
+    if (files.length === 0) {
       return NextResponse.json(
-        { error: "Capsule must contain a note or at least one file" },
+        { error: "Attach at least one file (photo, video, or audio)" },
         { status: 400 },
       );
     }
