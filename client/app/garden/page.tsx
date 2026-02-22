@@ -3,7 +3,6 @@
 import FlowerMenu from "@/components/FlowerMenu";
 import TypewriterText from "@/components/TypewriterText";
 import OrbGarden from "@/components/OrbGarden";
-import TypewriterText from "@/components/TypewriterText";
 import { createClient as createSupabaseClient } from "@/lib/supabase/client";
 import Image from "next/image";
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
