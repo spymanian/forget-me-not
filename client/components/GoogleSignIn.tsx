@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 export default function GoogleSignIn() {
   const supabase = createClient();
   const [user, setUser] = useState<any>(null);
+  const [checked, setChecked] = useState(false); // have we finished initial session load?
   const router = useRouter();
 
   // track auth state
@@ -14,11 +15,17 @@ export default function GoogleSignIn() {
     let mounted = true;
 
     supabase.auth.getSession().then(({ data }) => {
-      if (mounted) setUser(data.session?.user ?? null);
+      if (mounted) {
+        setUser(data.session?.user ?? null);
+        setChecked(true);
+      }
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange((_, session) => {
-      if (mounted) setUser(session?.user ?? null);
+      if (mounted) {
+        setUser(session?.user ?? null);
+        setChecked(true);
+      }
     });
 
     return () => {
@@ -37,9 +44,16 @@ export default function GoogleSignIn() {
   };
 
   const signOut = async () => {
+    // navigate away immediately so the old page unmounts before the
+    // auth state change can toggle the button
+    router.replace('/');
     await supabase.auth.signOut();
-    router.push('/');
   };
+
+  // if we haven't checked the initial session yet, render nothing
+  if (!checked) {
+    return null;
+  }
 
   // show logout when we have a user
   if (user) {

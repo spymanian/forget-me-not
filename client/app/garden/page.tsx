@@ -5,6 +5,8 @@ import TypewriterText from "@/components/TypewriterText";
 import OrbGarden from "@/components/OrbGarden";
 import Image from "next/image";
 import { FormEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
 type GardenView = "intro" | "create" | "garden";
 
@@ -215,6 +217,24 @@ function IntroHotspot({
 }
 
 export default function GardenPage() {
+  const router = useRouter();
+
+  // if we land on the garden without a valid session, send the user back home
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getSession().then(({ data }) => {
+      if (!data.session?.user) {
+        router.replace('/');
+      }
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_e, session) => {
+      if (!session?.user) {
+        router.replace('/');
+      }
+    });
+    return () => listener.subscription.unsubscribe();
+  }, [router]);
+
   const [view, setView] = useState<GardenView>("intro");
   const [viewInitialized, setViewInitialized] = useState(false);
   const [capsules, setCapsules] = useState<CapsuleSummary[]>([]);
