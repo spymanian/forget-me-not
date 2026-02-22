@@ -160,7 +160,9 @@ export default function Home() {
         </div>
 
         <div className={`subtitle-wrap ${subtitleVisible ? "fade-in" : "pre-anim"}`}>
-          <p className="typewriter-text">Plant a memory. Watch it bloom.</p>
+          <p className={`typewriter-text ${subtitleVisible ? "typewriter-animate" : ""}`}>
+            Plant a memory. Watch it bloom.
+          </p>
         </div>
 
         <div className={`welcome-actions ${actionsVisible ? "fade-in" : "pre-anim"}`}>
@@ -421,10 +423,37 @@ export default function Home() {
           color: rgba(196, 181, 253, 0.8);
           letter-spacing: 0.05em;
           white-space: nowrap;
-          overflow: visible;
-          border-right: 0;
-          width: auto;
+          overflow: hidden;
+          display: inline-block;
+          width: 0;
+          border-right: 2px solid rgba(196, 181, 253, 0.75);
           margin: 0 auto;
+        }
+
+        .typewriter-animate {
+          animation:
+            subtitle-typing 2.4s steps(31, end) 150ms forwards,
+            subtitle-caret 900ms step-end infinite;
+        }
+
+        @keyframes subtitle-typing {
+          from {
+            width: 0;
+          }
+          to {
+            width: 35ch;
+          }
+        }
+
+        @keyframes subtitle-caret {
+          0%,
+          50% {
+            border-right-color: rgba(196, 181, 253, 0.8);
+          }
+          50.01%,
+          100% {
+            border-right-color: transparent;
+          }
         }
 
         .welcome-actions {
