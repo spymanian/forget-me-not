@@ -421,10 +421,19 @@ export default function Home() {
           color: rgba(196, 181, 253, 0.8);
           letter-spacing: 0.05em;
           white-space: nowrap;
-          overflow: visible;
-          border-right: 0;
-          width: auto;
+          overflow: hidden;
+          border-right: 2px solid rgba(196, 181, 253, 0.7);
+          width: 0;
           margin: 0 auto;
+          animation: typing 1.8s steps(31, end) 0.2s forwards, blink 0.75s step-end infinite;
+        }
+        @keyframes typing {
+          from { width: 0; }
+          to { width: 35ch; }
+        }
+        @keyframes blink {
+          0%, 100% { border-color: rgba(196, 181, 253, 0.7); }
+          50% { border-color: transparent; }
         }
 
         .welcome-actions {
