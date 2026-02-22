@@ -1,32 +1,10 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import Particles, { initParticlesEngine } from "@tsparticles/react";
 import { loadSlim } from "@tsparticles/slim";
-import { createClient } from "@/lib/supabase/client";
 import GoogleSignIn from "@/components/GoogleSignIn";
 
-// if the user reaches the home page while signed in, redirect to the garden
-function AuthRedirectHelper() {
-  const router = useRouter();
-  useEffect(() => {
-    const supabase = createClient();
-    // check current session
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session?.user) {
-        router.replace('/garden');
-      }
-    });
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        router.replace('/garden');
-      }
-    });
-    return () => listener.subscription.unsubscribe();
-  }, [router]);
-  return null;
-}
 
 export default function Home() {
   const [engineReady, setEngineReady] = useState(false);
@@ -195,8 +173,6 @@ export default function Home() {
         </div>
       </main>
 
-      {/* client auth redirect logic */}
-      <AuthRedirectHelper />
 
       <style jsx>{`
         .welcome-root {
