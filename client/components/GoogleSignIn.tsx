@@ -8,6 +8,7 @@ export default function GoogleSignIn() {
   const supabase = createClient();
   const [user, setUser] = useState<any>(null);
   const [checked, setChecked] = useState(false); // have we finished initial session load?
+  const [loggingOut, setLoggingOut] = useState(false);
   const router = useRouter();
 
   // track auth state
@@ -44,14 +45,18 @@ export default function GoogleSignIn() {
   };
 
   const signOut = async () => {
-    // navigate away immediately so the old page unmounts before the
-    // auth state change can toggle the button
-    router.replace('/');
+    setLoggingOut(true);
     await supabase.auth.signOut();
+    router.replace('/');
   };
 
   // if we haven't checked the initial session yet, render nothing
   if (!checked) {
+    return null;
+  }
+
+  // if we're in the middle of logging out, hide the whole component
+  if (loggingOut) {
     return null;
   }
 
