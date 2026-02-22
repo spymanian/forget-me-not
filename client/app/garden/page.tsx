@@ -5,6 +5,8 @@ import TypewriterText from "@/components/TypewriterText";
 import { createClient as createSupabaseClient } from "@/lib/supabase/client";
 import Image from "next/image";
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { loadSlim } from "@tsparticles/slim";
+import GoogleSignIn from "@/components/GoogleSignIn";
 
 type GardenView = "intro" | "create" | "garden";
 
@@ -225,6 +227,7 @@ function CreateModal({
           background: rgba(2, 3, 7, 0.72);
           z-index: 100;
         }
+        
         .modal {
           width: 96%;
           max-width: 640px;
@@ -1574,6 +1577,8 @@ export default function GardenPage() {
           display: block;
           filter: drop-shadow(0 0 8px rgba(147, 197, 253, 0.24));
           transition: filter 140ms ease;
+          transform-origin: 50% 78%;
+          animation: logo-wind-sway 6.4s ease-in-out infinite;
         }
 
         .logo-trigger:hover .menu-logo,
@@ -1582,6 +1587,25 @@ export default function GardenPage() {
             drop-shadow(0 0 6px rgba(255, 255, 255, 0.35))
             drop-shadow(0 0 14px rgba(147, 197, 253, 0.65))
             drop-shadow(0 0 24px rgba(96, 165, 250, 0.35));
+        }
+
+        @keyframes logo-wind-sway {
+          0%,
+          100% {
+            transform: translateY(0) rotate(-1.2deg);
+          }
+          18% {
+            transform: translateY(-1px) rotate(-0.35deg);
+          }
+          40% {
+            transform: translateY(0.6px) rotate(1.4deg);
+          }
+          62% {
+            transform: translateY(-0.4px) rotate(0.2deg);
+          }
+          82% {
+            transform: translateY(0.8px) rotate(-0.9deg);
+          }
         }
 
         .logo-dropdown {

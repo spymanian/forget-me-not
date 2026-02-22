@@ -19,8 +19,27 @@
   }
 }
 
+html,
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  cursor: url("/cursor.png") 4 4, auto !important;
+}
+
+*,
+*::before,
+*::after {
+  cursor: url("/cursor.png") 4 4, auto !important;
+}
+
+a,
+button,
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+[role="button"],
+label,
+summary {
+  cursor: url("/cursor.png") 4 4, pointer !important;
 }
