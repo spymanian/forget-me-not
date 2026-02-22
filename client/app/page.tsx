@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Particles, { initParticlesEngine } from "@tsparticles/react";
 import { loadSlim } from "@tsparticles/slim";
+import { createClient } from "@/lib/supabase/client";
 import GoogleSignIn from "@/components/GoogleSignIn";
 
 
@@ -11,6 +12,19 @@ export default function Home() {
   const [titleVisible, setTitleVisible] = useState(false);
   const [subtitleVisible, setSubtitleVisible] = useState(false);
   const [actionsVisible, setActionsVisible] = useState(false);
+  const [user, setUser] = useState<any>(null);
+
+  // track session so we know whether to show the sign-in button
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getSession().then(({ data }) => {
+      setUser(data.session?.user ?? null);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_e, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => listener.subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     initParticlesEngine(async (engine) => {
@@ -168,7 +182,7 @@ export default function Home() {
           <p className="welcome-prompt">start your garden</p>
               {/* if the user is already signed in we redirect to dashboard, otherwise show button */}
           <div className="sign-in-wrapper">
-            <GoogleSignIn />
+            {user ? null : <GoogleSignIn />}
           </div>
         </div>
       </main>
