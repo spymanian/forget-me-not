@@ -10,7 +10,7 @@ export default function GoogleSignIn() {
   const [checked, setChecked] = useState(false); // have we finished initial session load?
   const [loggingOut, setLoggingOut] = useState(false);
   const router = useRouter();
-
+//lynn
   // track auth state
   useEffect(() => {
     let mounted = true;
