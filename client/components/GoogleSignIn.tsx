@@ -4,12 +4,19 @@ import { createClient } from "@/lib/supabase/client";
 
 export default function GoogleSignIn() {
   const supabase = createClient();
+  const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
 
   const signIn = async () => {
+    const baseUrl = configuredSiteUrl
+      ? /^https?:\/\//i.test(configuredSiteUrl)
+        ? configuredSiteUrl
+        : `https://${configuredSiteUrl}`
+      : window.location.origin;
+
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${baseUrl.replace(/\/$/, "")}/auth/callback`,
       },
     });
   };
