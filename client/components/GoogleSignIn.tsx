@@ -69,14 +69,14 @@ export default function GoogleSignIn() {
           .google-signin-btn {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            padding: 1rem 2rem;
+            gap: 1rem;
+            padding: 1.2rem 2.5rem;
             background: rgba(255, 255, 255, 0.04);
             border: 1px solid rgba(147, 197, 253, 0.2);
             border-radius: 2px;
             color: rgba(255, 255, 255, 0.75);
             font-family: var(--font-typewriter), 'Courier New', monospace;
-            font-size: 1rem;
+            font-size: 1.1rem;
             letter-spacing: 0.1em;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -87,9 +87,9 @@ export default function GoogleSignIn() {
             border-color: rgba(147, 197, 253, 0.5);
             color: rgba(255, 255, 255, 0.95);
             box-shadow:
-              0 0 16px rgba(147, 197, 253, 0.2),
-              0 0 32px rgba(59, 130, 246, 0.1),
-              inset 0 0 12px rgba(147, 197, 253, 0.05);
+              0 0 24px rgba(147, 197, 253, 0.3),
+              0 0 48px rgba(59, 130, 246, 0.2),
+              inset 0 0 16px rgba(147, 197, 253, 0.1);
           }
           .google-signin-btn:active {
             transform: scale(0.98);
